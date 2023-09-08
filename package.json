@@ -1,0 +1,17 @@
+{
+    "name": "dexterity-mm",
+    "version": "1.0.0",
+    "description": "Example Market Making script for Dexterity.",
+    "repository": "https://github.com/Hxro-Network/dexterity-mm",
+    "main": "index.js",
+    "type": "module",
+    "license": "MIT",
+    "private": true,
+    "dependencies": {
+        "@hxronetwork/dexterity-ts": "^1.6.3",
+        "discord.js": "^14.13.0"
+    },
+    "scripts": {
+        "start": "node src/mm.js"
+    }
+}

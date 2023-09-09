@@ -183,6 +183,7 @@ let numLevels = getEV('NUM_LEVELS', 5);
 let bps = dexterity.Fractional.New(getEV('BPS', 100), 4);
 let intralevelBps = dexterity.Fractional.New(getEV('INTRALEVEL_BPS', 100), 4);
 let qtyNotional = dexterity.Fractional.New(getEV('QTY_NOTIONAL', 5), 0); // default to $5 notional value order sizes
+let offsetBps = dexterity.Fractional.New(getEV('OFFSET_BPS', 0), 4);
 
 const productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
 
@@ -202,10 +203,10 @@ setInterval(async _ => {
         }
         const index = dexterity.Manifest.GetIndexPrice(trader.markPrices, meta.productKey);
         const lotSize = qtyNotional.div(index).round_down(new dexterity.BN(meta.baseDecimals));
-        console.log('quoting on', productName, 'around index', index.toString(4, true));
+        console.log('quoting on', productName, 'around index', index.toString(4, true), 'with offset bps =', offsetBps.mul(dexterity.Fractional.New(10000, 0)).toString(4, true));
         let price;
 
-        price = index.mul(dexterity.Fractional.One().add(bps));
+        price = index.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
         for (let i = 0; i < numLevels; i++) {
             const clientOrderId = new dexterity.BN(index*100+i);
             try {
@@ -221,7 +222,7 @@ setInterval(async _ => {
             price = price.mul(dexterity.Fractional.One().add(intralevelBps));
         }
 
-        price = index.mul(dexterity.Fractional.One().sub(bps));
+        price = index.mul(dexterity.Fractional.One().sub(bps).add(offsetBps));
         for (let i = 0; i < numLevels; i++) {
             const clientOrderId = new dexterity.BN(index*100+numLevels+i);
             try {

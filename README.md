@@ -47,13 +47,15 @@ The MM has the following parameters, which are set via environment variables:
 | Key            | Default              | Description                                                                 |
 | -------------- | -------------------- | --------------------------------------------------------------------------- |
 | RPC            | http://localhost:8899/ | -                                                                         |
-| MPG            | 4cKB5xKtDpv4xo6ZxyiEvtyX3HgXzyJUS1Y8hAfoNkMT | Public key of the Dexterity markets (MPG).                                            |
+| MPG            | Bluechip MPG (see below) | Public key of the Dexterity markets (MPG).                                            |
 | TRG            | -                    | Your trading account public key.                                            |
 | QUOTE_PERIOD_MS| 5000                 | How many milliseconds between updating quotes                               |
 | NUM_LEVELS     | 5                    | Number of levels to quote per side of each book                             |
 | BPS            | 100                  | "Radius from index price to begin quoting at, specified in basis points"    |
 | INTRALEVEL_BPS | 100                  | Number of basis points between levels on the same side of the book          |
 | QTY_NOTIONAL   | 5                    | Notional dollar value of lot sizes (using index price)                      |
+| OFFSET_BPS     | 0                    | Offset from index price in bps (to quote around) (can be negative)                      | 
+| PRODUCT_NAME_FILTER     | ''                    | Only make on products with names that include this substring                      | 
 
 
 Set your environment variable and run the mm with `yarn start`. For example:
@@ -61,3 +63,6 @@ Set your environment variable and run the mm with `yarn start`. For example:
 ```
 RPC=REPLACE_WTIH_URL_OF_YOUR_RPC TRG=REPLACE_WITH_TRG_PUBKEY yarn start
 ```
+
+
+BLUECHIP MPG: 4cKB5xKtDpv4xo6ZxyiEvtyX3HgXzyJUS1Y8hAfoNkMT

@@ -187,7 +187,7 @@ let offsetBps = dexterity.Fractional.New(getEV('OFFSET_BPS', 0), 4);
 
 const productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
 
-setInterval(async _ => {
+const makeMarkets = async _ => {
     const UNINITIALIZED = new dexterity.web3.PublicKey('11111111111111111111111111111111');
     for (const [productName, obj] of dexterity.Manifest.GetProductsOfMPG(trader.mpg)) {
         if (productNameFilter !== '' && !productName.includes(productNameFilter)) {
@@ -207,6 +207,7 @@ setInterval(async _ => {
         let price;
 
         price = index.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
+        console.log('mm\'s best offer:', price.toString(4, true));
         for (let i = 0; i < numLevels; i++) {
             const clientOrderId = new dexterity.BN(index*100+i);
             try {
@@ -223,6 +224,7 @@ setInterval(async _ => {
         }
 
         price = index.mul(dexterity.Fractional.One().sub(bps).add(offsetBps));
+        console.log('mm\'s best bid:', price.toString(4, true));
         for (let i = 0; i < numLevels; i++) {
             const clientOrderId = new dexterity.BN(index*100+numLevels+i);
             try {
@@ -238,4 +240,7 @@ setInterval(async _ => {
             price = price.mul(dexterity.Fractional.One().sub(intralevelBps));
         }
     }
-}, quotePeriodMs);
+};
+
+await makeMarkets();
+setInterval(makeMarkets, quotePeriodMs);

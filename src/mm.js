@@ -250,7 +250,9 @@ const makeMarkets = async _ => {
 const backupCancelLoop = async _ => {
     await trader.update();
     if (trader.getOpenOrders().size > numLevels * 2 * maxOrdersRatio) {
+        console.log('cancelling all because saw too many open orders:', trader.getOpenOrders().size, '>', numLevels * 2 * maxOrdersRatio);
         await cancelAllOrders();
+        await makeMarkets();
     }
 };
 

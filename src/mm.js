@@ -249,7 +249,7 @@ const makeMarkets = async _ => {
 
 const backupCancelLoop = async _ => {
     await trader.update();
-    if (trader.getOpenOrders().size > NUM_LEVELS * 2 * maxOrdersRatio) {
+    if (trader.getOpenOrders().size > numLevels * 2 * maxOrdersRatio) {
         await cancelAllOrders();
     }
 };

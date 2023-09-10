@@ -152,14 +152,17 @@ await trader.fetchAddressLookupTableAccount();
 console.log('successfully fetched address lookup table account...');
 
 console.log('cancelling all orders at startup...');
-try {
-    await trader.cancelAllOrders([]);
-} catch (e) {
-    console.error('failed to cancel all orders!');
-    console.error(e.logs);
-    console.error(e);
-    process.exit();
+const cancelAllOrders = async _ => {
+    try {
+        await trader.cancelAllOrders([]);
+    } catch (e) {
+        console.error('failed to cancel all orders!');
+        console.error(e.logs);
+        console.error(e);
+        process.exit();
+    }
 }
+await cancelAllOrders();
 
 function getProductAndMarketState(name) {
     let p, ms;
@@ -184,8 +187,10 @@ let bps = dexterity.Fractional.New(getEV('BPS', 100), 4);
 let intralevelBps = dexterity.Fractional.New(getEV('INTRALEVEL_BPS', 100), 4);
 let qtyNotional = dexterity.Fractional.New(getEV('QTY_NOTIONAL', 5), 0); // default to $5 notional value order sizes
 let offsetBps = dexterity.Fractional.New(getEV('OFFSET_BPS', 0), 4);
+let productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
+let cancelPeriodMs = getEV('CANCEL_PERIOD_MS', 60000);
+let maxOrdersRatio = getEV('MAX_ORDERS_RATIO', 2);
 
-const productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
 
 const makeMarkets = async _ => {
     const UNINITIALIZED = new dexterity.web3.PublicKey('11111111111111111111111111111111');
@@ -242,5 +247,13 @@ const makeMarkets = async _ => {
     }
 };
 
+const backupCancelLoop = async _ => {
+    await trader.update();
+    if (trader.getOpenOrders().size > NUM_LEVELS * 2 * maxOrdersRatio) {
+        await cancelAllOrders();
+    }
+};
+
 await makeMarkets();
 setInterval(makeMarkets, quotePeriodMs);
+setInterval(backupCancelLoop, cancelPeriodMs);

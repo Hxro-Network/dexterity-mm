@@ -161,7 +161,7 @@ console.log('successfully fetched address lookup table account...');
 console.log('cancelling all orders at startup...');
 const cancelAllOrders = async _ => {
     try {
-        await trader.cancelAllOrders([]);
+        await trader.cancelAllOrders([], undefined, true);
     } catch (e) {
         console.error('failed to cancel all orders!');
         console.error(e.logs);
@@ -221,10 +221,10 @@ const makeMarkets = async _ => {
         price = index.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
         console.log('mm\'s best offer:', price.toString(4, true));
         for (let i = 0; i < numLevels; i++) {
-            const clientOrderId = new dexterity.BN(index*100+i);
+            const clientOrderId = new dexterity.BN(productIndex*100+i);
             try {
                 trader.sendV0Tx([
-                    trader.getCancelOrderIx(productIndex, new dexterity.BN(0), true, clientOrderId),
+                    trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
                     trader.getNewOrderIx(productIndex, false, price, lotSize, false, null, null, clientOrderId)
                 ]);
             } catch (e) {
@@ -238,10 +238,10 @@ const makeMarkets = async _ => {
         price = index.mul(dexterity.Fractional.One().sub(bps).add(offsetBps));
         console.log('mm\'s best bid:', price.toString(4, true));
         for (let i = 0; i < numLevels; i++) {
-            const clientOrderId = new dexterity.BN(index*100+numLevels+i);
+            const clientOrderId = new dexterity.BN(productIndex*100+numLevels+i);
             try {
                 trader.sendV0Tx([
-                    trader.getCancelOrderIx(productIndex, new dexterity.BN(0), true, clientOrderId),
+                    trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
                     trader.getNewOrderIx(productIndex, true, price, lotSize, false, null, null, clientOrderId)
                 ]);
             } catch (e) {

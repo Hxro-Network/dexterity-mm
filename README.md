@@ -57,6 +57,7 @@ The MM has the following parameters, which are set via environment variables:
 | QTY_NOTIONAL   | 5                    | Notional dollar value of lot sizes (using index price)                      |
 | OFFSET_BPS     | 0                    | Offset from index price in bps (to quote around) (can be negative)                      | 
 | MAX_ORDERS_RATIO     | 2                    | Verifies there are not more than MAX_ORDERS_RATIO * 2 * NUM_LEVEL orders (and cancels if so) (see CANCEL_PERIOD_MS)                      | 
+| MIN_HEALTH_RATIO     | 0.1                    | Minimum ratio of excess initial margin to portfolio value (cancels if too low) (see CANCEL_PERIOD_MS)                      | 
 | PRODUCT_NAME_FILTER     | ''                    | Only make on products with names that include this substring                      | 
 
 

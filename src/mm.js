@@ -94,14 +94,21 @@ let lastNetCash = dexterity.Fractional.Zero();
 let lastPnL = dexterity.Fractional.Zero();
 
 function logTrader() {
+    const healthRatio = trader.getExcessInitialMargin().div(trader.getPortfolioValue()).mul(dexterity.Fractional.New(100, 0));
     console.log(
         "trader [" + trader.traderRiskGroup.toBase58().slice(0, 4) + "]",
+        "Required % Decrease in Portfolio Value to Unhealthy State:",
+        healthRatio.toString(2),
         "Portfolio Value:",
         trader.getPortfolioValue().toString(),
         "Position Value:",
         trader.getPositionValue().toString(),
         "Net Cash:",
         trader.getNetCash().toString(),
+        "Required Maintenance Margin:",
+        trader.getRequiredMaintenanceMargin().toString(2, true),
+        "Required Initial Margin:",
+        trader.getRequiredInitialMargin().toString(2, true),
         "PnL:",
         trader.getPnL().toString()
     );
@@ -189,8 +196,8 @@ let qtyNotional = dexterity.Fractional.New(getEV('QTY_NOTIONAL', 5), 0); // defa
 let offsetBps = dexterity.Fractional.New(getEV('OFFSET_BPS', 0), 4);
 let productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
 let cancelPeriodMs = getEV('CANCEL_PERIOD_MS', 60000);
-let maxOrdersRatio = getEV('MAX_ORDERS_RATIO', 2);
-
+let maxOrdersRatio = getEV('MAX_ORDERS_RATIO', 4);
+let minHealthRatio = dexterity.Fractional.FromString(getEV('MIN_HEALTH_RATIO', '0.10', false));
 
 const makeMarkets = async _ => {
     const UNINITIALIZED = new dexterity.web3.PublicKey('11111111111111111111111111111111');
@@ -249,8 +256,9 @@ const makeMarkets = async _ => {
 
 const backupCancelLoop = async _ => {
     await trader.update();
-    if (trader.getOpenOrders().size > numLevels * 2 * maxOrdersRatio) {
-        console.log('cancelling all because saw too many open orders:', trader.getOpenOrders().size, '>', numLevels * 2 * maxOrdersRatio);
+    const healthRatio = trader.getExcessInitialMargin().div(trader.getPortfolioValue());    
+    if (trader.getOpenOrders().size > numLevels * 2 * maxOrdersRatio || healthRatio.lt(minHealthRatio)) {
+        console.log('cancelling all because saw too many open orders or health ratio too bad. open:', trader.getOpenOrders().size, 'max:', numLevels * 2 * maxOrdersRatio, 'health ratio:', healthRatio.toString(2), 'min:', minHealthRatio.toString(2));
         await cancelAllOrders();
         await makeMarkets();
     }

@@ -191,13 +191,17 @@ function getProductAndMarketState(name) {
 let quotePeriodMs = getEV('QUOTE_PERIOD_MS', 5000);
 let numLevels = getEV('NUM_LEVELS', 5);
 let bps = dexterity.Fractional.New(getEV('BPS', 100), 4);
-let intralevelBps = dexterity.Fractional.New(getEV('INTRALEVEL_BPS', 100), 4);
+let interlevelBps = dexterity.Fractional.New(getEV('INTERLEVEL_BPS', 100), 4);
 let qtyNotional = dexterity.Fractional.New(getEV('QTY_NOTIONAL', 5), 0); // default to $5 notional value order sizes
 let offsetBps = dexterity.Fractional.New(getEV('OFFSET_BPS', 0), 4);
 let productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
 let cancelPeriodMs = getEV('CANCEL_PERIOD_MS', 60000);
 let maxOrdersRatio = getEV('MAX_ORDERS_RATIO', 4);
 let minHealthRatio = dexterity.Fractional.FromString(getEV('MIN_HEALTH_RATIO', '0.10', false));
+let minBpsToRequote = dexterity.Fractional.New(getEV('MIN_BPS_TO_REQUOTE', 50), 4);
+
+var lastBestBid = new Map();
+var lastBestAsk = new Map();
 
 const makeMarkets = async _ => {
     const UNINITIALIZED = new dexterity.web3.PublicKey('11111111111111111111111111111111');
@@ -219,37 +223,51 @@ const makeMarkets = async _ => {
         let price;
 
         price = index.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
-        console.log('mm\'s best offer:', price.toString(4, true));
-        for (let i = 0; i < numLevels; i++) {
-            const clientOrderId = new dexterity.BN(productIndex*100+i);
-            try {
-                trader.sendV0Tx([
-                    trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
-                    trader.getNewOrderIx(productIndex, false, price, lotSize, false, null, null, clientOrderId)
-                ]);
-            } catch (e) {
-                console.error('failed to send replace for level', i, 'of asks of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
-                console.error(e);
-                console.error(e.logs);
+        let prevAsk = lastBestAsk.get(productName) ?? dexterity.Fractional.Nan();
+        const askMovement = (price.sub(prevAsk)).abs().div(prevAsk);
+        if (askMovement.isNan() || askMovement.gt(minBpsToRequote)) {
+            lastBestAsk.set(productName, price.reduced());
+            console.log('mm\'s best offer:', price.toString(4, true));
+            for (let i = 0; i < numLevels; i++) {
+                const clientOrderId = new dexterity.BN(productIndex*100+i);
+                try {
+                    trader.sendV0Tx([
+                        trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
+                        trader.getNewOrderIx(productIndex, false, price, lotSize, false, null, null, clientOrderId)
+                    ]);
+                } catch (e) {
+                    console.error('failed to send replace for level', i, 'of asks of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
+                    console.error(e);
+                    console.error(e.logs);
+                }
+                price = price.mul(dexterity.Fractional.One().add(interlevelBps));
             }
-            price = price.mul(dexterity.Fractional.One().add(intralevelBps));
+        } else {
+            console.log('not requoting asks because price didn\'t move enough:', askMovement.toString(4), '<', minBpsToRequote.toString(4), '(SEE MIN_BPS_TO_REQUOTE)');
         }
 
         price = index.mul(dexterity.Fractional.One().sub(bps).add(offsetBps));
-        console.log('mm\'s best bid:', price.toString(4, true));
-        for (let i = 0; i < numLevels; i++) {
-            const clientOrderId = new dexterity.BN(productIndex*100+numLevels+i);
-            try {
-                trader.sendV0Tx([
-                    trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
-                    trader.getNewOrderIx(productIndex, true, price, lotSize, false, null, null, clientOrderId)
-                ]);
-            } catch (e) {
-                console.error('failed to send replace for level', i, 'of bids of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
-                console.error(e);
-                console.error(e.logs);
+        let prevBid = lastBestBid.get(productName) ?? dexterity.Fractional.Nan();
+        const bidMovement = (price.sub(prevBid)).abs().div(prevBid);
+        if (bidMovement.isNan() || bidMovement.gt(minBpsToRequote)) {
+            lastBestBid.set(productName, price.reduced());
+            console.log('mm\'s best bid:', price.toString(4, true));
+            for (let i = 0; i < numLevels; i++) {
+                const clientOrderId = new dexterity.BN(productIndex*100+numLevels+i);
+                try {
+                    trader.sendV0Tx([
+                        trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
+                        trader.getNewOrderIx(productIndex, true, price, lotSize, false, null, null, clientOrderId)
+                    ]);
+                } catch (e) {
+                    console.error('failed to send replace for level', i, 'of bids of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
+                    console.error(e);
+                    console.error(e.logs);
+                }
+                price = price.mul(dexterity.Fractional.One().sub(interlevelBps));
             }
-            price = price.mul(dexterity.Fractional.One().sub(intralevelBps));
+        } else {
+            console.log('not requoting bids because price didn\'t move enough:', bidMovement.toString(4), '<', minBpsToRequote.toString(4), '(SEE MIN_BPS_TO_REQUOTE)');
         }
     }
 };

@@ -53,9 +53,10 @@ The MM has the following parameters, which are set via environment variables:
 | CANCEL_PERIOD_MS| 60000                 | How many milliseconds between verifying there are not more than MAX_ORDERS_RATIO * 2 * NUM_LEVEL orders (and cancelling all if so)                               |
 | NUM_LEVELS     | 5                    | Number of levels to quote per side of each book                             |
 | BPS            | 100                  | "Radius from index price to begin quoting at, specified in basis points"    |
-| INTRALEVEL_BPS | 100                  | Number of basis points between levels on the same side of the book          |
+| INTERLEVEL_BPS | 100                  | Number of basis points between levels on the same side of the book          |
 | QTY_NOTIONAL   | 5                    | Notional dollar value of lot sizes (using index price)                      |
 | OFFSET_BPS     | 0                    | Offset from index price in bps (to quote around) (can be negative)                      | 
+| MIN_BPS_TO_REQUOTE     | 50                    | Minimum price movement in BPS before replacing quotes                      | 
 | MAX_ORDERS_RATIO     | 2                    | Verifies there are not more than MAX_ORDERS_RATIO * 2 * NUM_LEVEL orders (and cancels if so) (see CANCEL_PERIOD_MS)                      | 
 | MIN_HEALTH_RATIO     | 0.1                    | Minimum ratio of excess initial margin to portfolio value (cancels if too low) (see CANCEL_PERIOD_MS)                      | 
 | PRODUCT_NAME_FILTER     | ''                    | Only make on products with names that include this substring                      | 

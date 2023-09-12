@@ -205,7 +205,15 @@ var lastBestAsk = new Map();
 
 const makeMarkets = async _ => {
     const UNINITIALIZED = new dexterity.web3.PublicKey('11111111111111111111111111111111');
-    for (const [productName, obj] of dexterity.Manifest.GetProductsOfMPG(trader.mpg)) {
+    const products = dexterity.Manifest.GetProductsOfMPG(trader.mpg);
+    let numProducts = 0;
+    for (const [productName, obj] of products) {
+        if (productNameFilter !== '' && !productName.includes(productNameFilter)) {
+            continue;
+        }
+        numProducts += 1;
+    }
+    for (const [productName, obj] of products) {
         if (productNameFilter !== '' && !productName.includes(productNameFilter)) {
             continue;
         }
@@ -225,7 +233,7 @@ const makeMarkets = async _ => {
         price = index.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
         let prevAsk = lastBestAsk.get(productName) ?? dexterity.Fractional.Nan();
         const askMovement = (price.sub(prevAsk)).abs().div(prevAsk);
-        if (askMovement.isNan() || askMovement.gt(minBpsToRequote)) {
+        if (askMovement.isNan() || askMovement.gt(minBpsToRequote) || trader.getOpenOrders().size < numLevels * 2 * numProducts) {
             lastBestAsk.set(productName, price.reduced());
             console.log('mm\'s best offer:', price.toString(4, true));
             for (let i = 0; i < numLevels; i++) {
@@ -249,7 +257,7 @@ const makeMarkets = async _ => {
         price = index.mul(dexterity.Fractional.One().sub(bps).add(offsetBps));
         let prevBid = lastBestBid.get(productName) ?? dexterity.Fractional.Nan();
         const bidMovement = (price.sub(prevBid)).abs().div(prevBid);
-        if (bidMovement.isNan() || bidMovement.gt(minBpsToRequote)) {
+        if (bidMovement.isNan() || bidMovement.gt(minBpsToRequote) || trader.getOpenOrders().size < numLevels * 2 * numProducts) {
             lastBestBid.set(productName, price.reduced());
             console.log('mm\'s best bid:', price.toString(4, true));
             for (let i = 0; i < numLevels; i++) {
@@ -275,7 +283,15 @@ const makeMarkets = async _ => {
 const backupCancelLoop = async _ => {
     await trader.update();
     const healthRatio = trader.getExcessInitialMargin().div(trader.getPortfolioValue());    
-    if (trader.getOpenOrders().size > numLevels * 2 * maxOrdersRatio || healthRatio.lt(minHealthRatio)) {
+    const products = dexterity.Manifest.GetProductsOfMPG(trader.mpg);
+    let numProducts = 0;
+    for (const [productName, obj] of products) {
+        if (productNameFilter !== '' && !productName.includes(productNameFilter)) {
+            continue;
+        }
+        numProducts += 1;
+    }    
+    if (trader.getOpenOrders().size > numLevels * 2 * numProducts * maxOrdersRatio || healthRatio.lt(minHealthRatio)) {
         console.log('cancelling all because saw too many open orders or health ratio too bad. open:', trader.getOpenOrders().size, 'max:', numLevels * 2 * maxOrdersRatio, 'health ratio:', healthRatio.toString(2), 'min:', minHealthRatio.toString(2));
         await cancelAllOrders();
         await makeMarkets();

@@ -158,10 +158,19 @@ console.log('fetching address lookup table account...');
 await trader.fetchAddressLookupTableAccount();
 console.log('successfully fetched address lookup table account...');
 
+let productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
+
 console.log('cancelling all orders at startup...');
 const cancelAllOrders = async _ => {
+    const productNames = [];
+    for (const [productName, { index, product }] of dexterity.Manifest.GetActiveProductsOfMPG(trader.mpg)) {
+        const meta = dexterity.productToMeta(product);
+        if (productName.includes(productNameFilter)) {
+            productNames.push(productName);
+        }
+    }
     try {
-        await trader.cancelAllOrders([], undefined, true);
+        await trader.cancelAllOrders(productNames, undefined, true);
     } catch (e) {
         console.error('failed to cancel all orders!');
         console.error(e.logs);
@@ -194,7 +203,6 @@ let bps = dexterity.Fractional.New(getEV('BPS', 100), 4);
 let interlevelBps = dexterity.Fractional.New(getEV('INTERLEVEL_BPS', 100), 4);
 let qtyNotional = dexterity.Fractional.New(getEV('QTY_NOTIONAL', 5), 0); // default to $5 notional value order sizes
 let offsetBps = dexterity.Fractional.New(getEV('OFFSET_BPS', 0), 4);
-let productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
 let cancelPeriodMs = getEV('CANCEL_PERIOD_MS', 60000);
 let maxOrdersRatio = getEV('MAX_ORDERS_RATIO', 4);
 let minHealthRatio = dexterity.Fractional.FromString(getEV('MIN_HEALTH_RATIO', '0.10', false));
@@ -205,7 +213,7 @@ var lastBestAsk = new Map();
 
 const makeMarkets = async _ => {
     const UNINITIALIZED = new dexterity.web3.PublicKey('11111111111111111111111111111111');
-    const products = dexterity.Manifest.GetProductsOfMPG(trader.mpg);
+    const products = dexterity.Manifest.GetActiveProductsOfMPG(trader.mpg);
     let numProducts = 0;
     for (const [productName, obj] of products) {
         if (productNameFilter !== '' && !productName.includes(productNameFilter)) {

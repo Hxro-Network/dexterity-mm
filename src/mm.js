@@ -155,8 +155,11 @@ console.log(
 // call connect() so updates are streamed
 await trader.connect(onUpdate(trader));
 console.log('fetching address lookup table account...');
-await trader.fetchAddressLookupTableAccount();
-console.log('successfully fetched address lookup table account...');
+try {
+    await trader.fetchAddressLookupTableAccount();
+} catch (e) {
+    console.log('failed to fetch address lookup table account with error', e);
+}
 
 let productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
 
@@ -247,10 +250,12 @@ const makeMarkets = async _ => {
             for (let i = 0; i < numLevels; i++) {
                 const clientOrderId = new dexterity.BN(productIndex*100+i);
                 try {
-                    trader.sendV0Tx([
-                        trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
-                        trader.getNewOrderIx(productIndex, false, price, lotSize, false, null, null, clientOrderId)
-                    ]);
+                    const ixs = [trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId)];
+                    if (trader.addressLookupTableAccount) {
+                        ixs.push(trader.getUpdateMarkPricesIx());
+                    }
+                    ixs.push(trader.getNewOrderIx(productIndex, false, price, lotSize, false, null, null, clientOrderId));
+                    trader.sendV0Tx(ixs);
                 } catch (e) {
                     console.error('failed to send replace for level', i, 'of asks of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
                     console.error(e);
@@ -271,10 +276,12 @@ const makeMarkets = async _ => {
             for (let i = 0; i < numLevels; i++) {
                 const clientOrderId = new dexterity.BN(productIndex*100+numLevels+i);
                 try {
-                    trader.sendV0Tx([
-                        trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId),
-                        trader.getNewOrderIx(productIndex, true, price, lotSize, false, null, null, clientOrderId)
-                    ]);
+                    const ixs = [trader.getCancelOrderIx(productIndex, undefined, true, clientOrderId)];
+                    if (trader.addressLookupTableAccount) {
+                        ixs.push(trader.getUpdateMarkPricesIx());
+                    }
+                    ixs.push(trader.getNewOrderIx(productIndex, true, price, lotSize, false, null, null, clientOrderId));
+                    trader.sendV0Tx(ixs);
                 } catch (e) {
                     console.error('failed to send replace for level', i, 'of bids of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
                     console.error(e);

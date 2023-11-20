@@ -252,12 +252,12 @@ const makeMarkets = async _ => {
             continue;
         }
         const quote = getQuotePrice(trader, product, meta);
-        let lotSize = qtyNotional.div(quote);
+        let lotSize = qtyNotional.div(quote).abs();
         const baseDecimals = new dexterity.BN(meta.baseDecimals);
         if (lotSize.exp.gt(baseDecimals)) {
                 lotSize = lotSize.round_down(baseDecimals);
         }
-        console.log('quoting on', productName, 'around ', quote.toString(4, true), 'with offset bps =', offsetBps.mul(dexterity.Fractional.New(10000, 0)).toString(4, true));
+        console.log('quoting on', productName.trim(), 'around ', quote.toString(4, true), 'wtih lot size =', lotSize.toString(), 'with offset bps =', offsetBps.mul(dexterity.Fractional.New(10000, 0)).toString(4, true));
         let price;
 
         price = quote.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
@@ -340,6 +340,7 @@ const backupCancelLoop = async _ => {
     }
 };
 
+console.log('PRODUCT_NAME_FILTER:', productNameFilter);
 await makeMarkets();
 setInterval(makeMarkets, quotePeriodMs);
 setInterval(backupCancelLoop, cancelPeriodMs);

@@ -60,6 +60,8 @@ The MM has the following parameters, which are set via environment variables:
 | MAX_ORDERS_RATIO     | 2                    | Verifies there are not more than MAX_ORDERS_RATIO * 2 * NUM_LEVEL orders (and cancels if so) (see CANCEL_PERIOD_MS)                      | 
 | MIN_HEALTH_RATIO     | 0.1                    | Minimum ratio of excess initial margin to portfolio value (cancels if too low) (see CANCEL_PERIOD_MS)                      | 
 | PRODUCT_NAME_FILTER     | ''                    | Only make on products with names that include this substring                      | 
+| DRY_RUN     | 'false'                    | If 'true', do not send transactions to the blockchain                      | 
+| COMBOS_QUOTE_INDEX_PRICE     | 'false'                    | If 'true', quote combos around the weighted sum of the index prices of the legs, rather than the midpoints of the legs                      | 
 
 
 Set your environment variable and run the mm with `yarn start`. For example:
@@ -68,5 +70,4 @@ Set your environment variable and run the mm with `yarn start`. For example:
 RPC=REPLACE_WTIH_URL_OF_YOUR_RPC TRG=REPLACE_WITH_TRG_PUBKEY yarn start
 ```
 
-
-BLUECHIP MPG: 4cKB5xKtDpv4xo6ZxyiEvtyX3HgXzyJUS1Y8hAfoNkMT
+STAKECHIP MPG: LSTqd6kXfMcMmVj63TdFfXvwSEYSkQVcT6GrwH4Ki3h

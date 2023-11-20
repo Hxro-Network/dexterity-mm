@@ -162,6 +162,8 @@ try {
 }
 
 let productNameFilter = getEV('PRODUCT_NAME_FILTER', '', false);
+let isDryRun = getEV('DRY_RUN', 'false', false) === 'true';
+let combosQuoteIndexPrice = getEV('COMBOS_QUOTE_INDEX_PRICE', 'false', false) === 'true';
 
 console.log('cancelling all orders at startup...');
 const cancelAllOrders = async _ => {
@@ -173,7 +175,11 @@ const cancelAllOrders = async _ => {
         }
     }
     try {
-        await trader.cancelAllOrders(productNames, undefined, true);
+        if (!isDryRun) {
+            await trader.cancelAllOrders(productNames, undefined, true);
+        } else {
+            console.log('DID NOT send tx because it\'s a dry run');
+        }
     } catch (e) {
         console.error('failed to cancel all orders!');
         console.error(e.logs);
@@ -214,6 +220,18 @@ let minBpsToRequote = dexterity.Fractional.New(getEV('MIN_BPS_TO_REQUOTE', 50), 
 var lastBestBid = new Map();
 var lastBestAsk = new Map();
 
+const getQuotePrice = (trader, product, meta) => {
+    const index = dexterity.Manifest.GetIndexPrice(trader.markPrices, meta.productKey, trader.mpg);;
+    const midpoint = dexterity.Manifest.GetMidpointPrice(trader.mpg, meta.productKey)
+    if (product.combo?.combo) {
+        if (combosQuoteIndexPrice || midpoint.isNan()) {
+            return index;
+        }
+        return midpoint;
+    }
+    return index;
+}
+
 const makeMarkets = async _ => {
     const UNINITIALIZED = new dexterity.web3.PublicKey('11111111111111111111111111111111');
     const products = dexterity.Manifest.GetActiveProductsOfMPG(trader.mpg);
@@ -233,15 +251,16 @@ const makeMarkets = async _ => {
         if (meta.productKey.equals(UNINITIALIZED)) {
             continue;
         }
-        if (product.combo?.combo) {
-            continue;
+        const quote = getQuotePrice(trader, product, meta);
+        let lotSize = qtyNotional.div(quote);
+        const baseDecimals = new dexterity.BN(meta.baseDecimals);
+        if (lotSize.exp.gt(baseDecimals)) {
+                lotSize = lotSize.round_down(baseDecimals);
         }
-        const index = dexterity.Manifest.GetIndexPrice(trader.markPrices, meta.productKey);
-        const lotSize = qtyNotional.div(index).round_down(new dexterity.BN(meta.baseDecimals));
-        console.log('quoting on', productName, 'around index', index.toString(4, true), 'with offset bps =', offsetBps.mul(dexterity.Fractional.New(10000, 0)).toString(4, true));
+        console.log('quoting on', productName, 'around ', quote.toString(4, true), 'with offset bps =', offsetBps.mul(dexterity.Fractional.New(10000, 0)).toString(4, true));
         let price;
 
-        price = index.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
+        price = quote.mul(dexterity.Fractional.One().add(bps).add(offsetBps));
         let prevAsk = lastBestAsk.get(productName) ?? dexterity.Fractional.Nan();
         const askMovement = (price.sub(prevAsk)).abs().div(prevAsk);
         if (askMovement.isNan() || askMovement.gt(minBpsToRequote) || trader.getOpenOrders().size < numLevels * 2 * numProducts) {
@@ -255,7 +274,11 @@ const makeMarkets = async _ => {
                         ixs.push(trader.getUpdateMarkPricesIx());
                     }
                     ixs.push(trader.getNewOrderIx(productIndex, false, price, lotSize, false, null, null, clientOrderId));
-                    trader.sendV0Tx(ixs);
+                    if (!isDryRun) {
+                        trader.sendV0Tx(ixs);
+                    } else {
+                        console.log('DID NOT send tx because it\'s a dry run');
+                    }
                 } catch (e) {
                     console.error('failed to send replace for level', i, 'of asks of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
                     console.error(e);
@@ -267,7 +290,7 @@ const makeMarkets = async _ => {
             console.log('not requoting asks because price didn\'t move enough:', askMovement.toString(4), '<', minBpsToRequote.toString(4), '(SEE MIN_BPS_TO_REQUOTE)');
         }
 
-        price = index.mul(dexterity.Fractional.One().sub(bps).add(offsetBps));
+        price = quote.mul(dexterity.Fractional.One().sub(bps).add(offsetBps));
         let prevBid = lastBestBid.get(productName) ?? dexterity.Fractional.Nan();
         const bidMovement = (price.sub(prevBid)).abs().div(prevBid);
         if (bidMovement.isNan() || bidMovement.gt(minBpsToRequote) || trader.getOpenOrders().size < numLevels * 2 * numProducts) {
@@ -281,7 +304,11 @@ const makeMarkets = async _ => {
                         ixs.push(trader.getUpdateMarkPricesIx());
                     }
                     ixs.push(trader.getNewOrderIx(productIndex, true, price, lotSize, false, null, null, clientOrderId));
-                    trader.sendV0Tx(ixs);
+                    if (!isDryRun) {
+                        trader.sendV0Tx(ixs);
+                    } else {
+                        console.log('DID NOT send tx because it\'s a dry run');
+                    }
                 } catch (e) {
                     console.error('failed to send replace for level', i, 'of bids of', productName, 'price', price.toString(4, true), 'qty', lotSize.toString());
                     console.error(e);

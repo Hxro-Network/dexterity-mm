@@ -62,6 +62,10 @@ The MM has the following parameters, which are set via environment variables:
 | PRODUCT_NAME_FILTER     | ''                    | Only make on products with names that include this substring                      | 
 | DRY_RUN     | 'false'                    | If 'true', do not send transactions to the blockchain                      | 
 | COMBOS_QUOTE_INDEX_PRICE     | 'false'                    | If 'true', quote combos around the weighted sum of the index prices of the legs, rather than the midpoints of the legs                      | 
+| SKIP_MARK_PRICES     | 'false'                    | If 'true', skips packing in "update mark prices" instructions. Skipping this reduces compute cost but the transaction could fail if mark prices are out of date.                      | 
+| SKIP_CANCELS     | 'false'                    | If 'true', skips packing in cancel instructions. Orders never get canceled except by the backup cancel logic. Not recommended. It's likely you'll want to fork this repository and write your own cancellation logic.                      | 
+| LEGGER     | 'false'                    | If 'true', run the legger bot instead of the mm. See "Running the Legger Bot" below.                      | 
+| LEGGER_EDGE     | 5                   | The legger bot's edge in bps. This factors into quote prices to produce an expected profit (in bps) for each fill + aggression.                      | 
 
 
 Set your environment variable and run the mm with `yarn start`. For example:
@@ -71,3 +75,13 @@ RPC=REPLACE_WTIH_URL_OF_YOUR_RPC TRG=REPLACE_WITH_TRG_PUBKEY yarn start
 ```
 
 STAKECHIP MPG: LSTqd6kXfMcMmVj63TdFfXvwSEYSkQVcT6GrwH4Ki3h
+
+## Running the Legger Bot
+
+The legger bot runs a strategy that quotes in the legs of combos with prices such that, when filled, the bot can aggressively take the combo and other leg to get flat with a profit.
+
+To run the legger bot set `LEGGER=true` and !!! WARNING !!! be sure to set `PRODUCT_NAME_FILTER=` to exactly ONE combo. Multiple combos are not supported yet; the code is written to infer the combo and other leg from a given leg's public key, but this inference is not well-defined, since one leg could be a part of multiple combos. For example, MSOL is part of both MSOL-JSOL and MSOL-SOL; it is ambiguous which combo and which other leg you're referring to when calling `getComboAndOtherOutright(MSOL)`. This problem is avoided when filtering the products to just one combo and its legs, which can be done by simplying specifying the combo. Example: `PRODUCT_NAME_FILTER=MSOL-SOL`.
+
+```
+PRODUCT_NAME_FILTER=MSOL-SOL LEGGER=true yarn start
+```

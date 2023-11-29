@@ -60,8 +60,10 @@ function readJsonFileToUint8Array(filePath) {
 const rpc = getEV('RPC', 'http://localhost:8899/', false);
 console.log('rpc:', rpc);
 
+let hotWalletPath = getEV('HOT_WALLET', 'my_key.json', false);
+
 // create a new wallet and airdrop it some SOL
-const keypair = Keypair.fromSecretKey(readJsonFileToUint8Array('my_key.json'));
+const keypair = Keypair.fromSecretKey(readJsonFileToUint8Array(hotWalletPath));
 const wallet = new Wallet(keypair);
 
 const connection = new Connection(rpc, "confirmed");

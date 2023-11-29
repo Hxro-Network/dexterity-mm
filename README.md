@@ -46,6 +46,7 @@ The MM has the following parameters, which are set via environment variables:
 
 | Key            | Default              | Description                                                                 |
 | -------------- | -------------------- | --------------------------------------------------------------------------- |
+| HOT_WALLET            | my_key.json | Path to your hot wallet's private key (JSON file)                                                                         |
 | RPC            | http://localhost:8899/ | -                                                                         |
 | MPG            | Bluechip MPG (see below) | Public key of the Dexterity markets (MPG).                                            |
 | TRG            | -                    | Your trading account public key.                                            |

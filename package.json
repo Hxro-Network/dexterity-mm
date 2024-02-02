@@ -8,7 +8,10 @@
     "license": "MIT",
     "private": true,
     "dependencies": {
-        "@hxronetwork/dexterity-ts": "^1.6.23"
+        "@bonfida/aaob": "^0.0.3",
+        "@project-serum/anchor": "^0.24.2",
+        "@hxronetwork/dexterity-ts": "^1.6.23",
+        "@solana/web3.js": "^1.78.0"
     },
     "scripts": {
         "start": "node src/mm.js"

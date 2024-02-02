@@ -8,7 +8,7 @@
     "license": "MIT",
     "private": true,
     "dependencies": {
-        "@hxronetwork/dexterity-ts": "^1.6.10"
+        "@hxronetwork/dexterity-ts": "^1.6.23"
     },
     "scripts": {
         "start": "node src/mm.js"

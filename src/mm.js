@@ -323,8 +323,8 @@ const getComboAndOtherOutright = async (productKey, products) => {
 const getQuotePrice = async (trader, product, meta) => {
     try {
         if (!isLegger) {
-            const index = dexterity.Manifest.GetIndexPrice(trader.markPrices, meta.productKey, trader.mpg);;
-            const midpoint = dexterity.Manifest.GetMidpointPrice(trader.mpg, meta.productKey)
+            const index = dexterity.Manifest.GetIndexPrice(trader.markPrices, meta.productKey, trader.mpg);
+            const midpoint = dexterity.Manifest.GetMidpointPrice(trader.mpg, meta.productKey);
             if (product.combo?.combo) {
                 if (combosQuoteIndexPrice || midpoint.isNan()) {
                     return { quote: index, bid: null, ask: null };
